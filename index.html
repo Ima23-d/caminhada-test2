@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caminhada</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #03B403;
+            overflow-x: hidden;
+        }
+
+        .container {
+            text-align: center;
+            background-color: #01e425;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 10px 20px black;
+            max-width: 400px;
+            width: 300px;
+            color: white;
+        }
+
+        h1 {
+            color: white;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 18px;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #03B403;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+         #startTime, #endTime, #caloriesBurned, #totalTime {
+            margin-top: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        #status{
+            color: black;
+        }
+
+        .mapa{
+            padding: 10px 20px;
+            border-radius: 10px;
+            background-color: black;
+            color: white;
+        }
+
+
+        
+    .card {
+        width: 350px;
+        height: 90px;
+        background: #353535;
+        transform-style: preserve-3d;
+        transform: perspective(30rem) rotateX(30deg);
+        position: relative;
+        margin: 10px;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        z-index: 2;
+ 
+       
+        
+    }
+
+    .card::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        transform: translateY(50%);
+        left: 0;
+        width: 100%;
+        height: 10px;
+        background: linear-gradient(
+            90deg,
+            #fff 0%,
+            #fff 70%,
+            #353535 70%,
+            #353535 100%
+        );
+        background-size: 120px;
+        animation: animateRoad 0.5s linear infinite;
+    }
+
+    @keyframes animateRoad {
+        0% {
+            background-position: 0px;
+        }
+        100% {
+            background-position: -120px;
+        }
+    }
+
+    .card::after {
+        content: "";
+        width: 100%;
+        height: 20px;
+        position: absolute;
+        bottom: -20px;
+        background-color: #272727;
+        transform-origin: top;
+        transform: perspective(30rem) rotateX(-30deg);
+        box-shadow: 0 10px 20px -2px #272727;
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+    }
+
+    .shadow {
+        color: #fff;
+        padding: 10px;
+        letter-spacing: 1px;
+    }
+    img {
+        margin-bottom: -50px;
+        width:150px;
+        height: 150px;
+    }
+    </style>
+</head>
+<body>
+    <from>
+    <img src="corre-unscreen.gif" alt="">
+    <div class="card"></div>
+    <div class="container">
+        <h1>Rastreamento de Caminhada</h1>
+        <p id="status">Clique no botão para iniciar o rastreamento.</p>
+        <p id="distance">Distância percorrida: 0 km</p>
+        <p id="startTime">Hora de início: --</p>
+        <p id="endTime">Hora de término: --</p>
+        <p id="caloriesBurned">Calorias queimadas: 0 kcal</p>
+        <p id="totalTime">Tempo total: 0 min</p>
+        <button class="button" id="toggleBtn">Iniciar Caminhada</button>
+    <a href="mapa.html">
+        <button class="mapa">Mapa</button>
+    </a>
+    </div>
+</from>
+
+    <script>
+        let coords = [];
+        let totalDistance = 0;
+        let watchId;
+        let isTracking = false;
+        let startTime, endTime;
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function success(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const currentPos = [latitude, longitude];
+
+            if (coords.length > 0) {
+                const lastPos = coords[coords.length - 1];
+                const distance = calculateDistance(lastPos[0], lastPos[1], latitude, longitude);
+                totalDistance += distance;
+                document.getElementById('distance').innerText = `Distância percorrida: ${totalDistance.toFixed(2)} km`;
+                document.getElementById('caloriesBurned').innerText = `Calorias queimadas: ${(totalDistance * 1000 * 0.05).toFixed(2)} kcal`;
+            }
+
+            coords.push(currentPos);
+            document.getElementById('status').innerText = `Posição atual: Latitude ${latitude}, Longitude ${longitude}`;
+        }
+
+        function error(err) {
+            console.warn(`ERRO(${err.code}): ${err.message}`);
+            document.getElementById('status').innerText = "Erro ao obter localização.";
+        }
+
+        function toggleTracking() {
+            if (isTracking) {
+                navigator.geolocation.clearWatch(watchId);
+                endTime = new Date();
+                const elapsedTime = ((endTime - startTime) / 60000).toFixed(2);
+                
+                document.getElementById('status').innerText = "Rastreamento parado.";
+                document.getElementById('toggleBtn').innerText = "Iniciar Caminhada";
+                document.getElementById('endTime').innerText = `Hora de término: ${endTime.toLocaleTimeString()}`;
+                document.getElementById('totalTime').innerText = `Tempo total: ${elapsedTime} min`;
+                
+                isTracking = false;
+            } else {
+                if (navigator.geolocation) {
+                    startTime = new Date();
+                    document.getElementById('startTime').innerText = `Hora de início: ${startTime.toLocaleTimeString()}`;
+                    document.getElementById('endTime').innerText = `Hora de término: --`;
+                    document.getElementById('caloriesBurned').innerText = `Calorias queimadas: 0 kcal`;
+                    document.getElementById('totalTime').innerText = `Tempo total: 0 min`;
+
+                    totalDistance = 0;
+                    coords = [];
+                    
+                    watchId = navigator.geolocation.watchPosition(success, error, {
+                        enableHighAccuracy: true,
+                        maximumAge: 1000,
+                        timeout: 5000
+                    });
+                    document.getElementById('status').innerText = "Rastreamento iniciado...";
+                    document.getElementById('toggleBtn').innerText = "Parar Caminhada";
+                    isTracking = true;
+                } else {
+                    alert('Geolocalização não suportada neste navegador.');
+                }
+            }
+        }
+
+        document.getElementById('toggleBtn').addEventListener('click', toggleTracking);
+    </script>
+</body>
+</html>

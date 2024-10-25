@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Caminhada</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        // Inicializando o mapa
+        const map = L.map('map', {
+            maxZoom: 20 // Define o zoom máximo permitido pelo mapa
+        }).setView([0, 0], 13); // Coordenadas iniciais e zoom padrão
+
+        // Adicionando a camada de tiles (mapa base)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            // attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 20
+        }).addTo(map);
+
+        let polyline = L.polyline([], { color: ' #01e425' }).addTo(map); // Cria uma linha vazia no início
+        let marker; // Variável para armazenar o marcador
+
+        // Função para desenhar a rota salva
+        function drawSavedRoute() {
+            const savedCoordinates = localStorage.getItem('route');
+            const coordinates = savedCoordinates ? JSON.parse(savedCoordinates) : [];
+
+            if (coordinates.length > 0) {
+                polyline.setLatLngs(coordinates); // Desenha a rota salva
+                map.setView(coordinates[0], 15);  // Centraliza o mapa na primeira posição
+                map.fitBounds(polyline.getBounds()); // Ajusta os limites do mapa à rota
+            } else {
+                alert('Nenhuma rota salva encontrada.');
+            }
+
+            // Mostra a distância percorrida
+            const distance = localStorage.getItem('distance') || 0;
+            console.log(`Distância percorrida: ${distance} km`);
+        }
+
+        // Função para obter a localização atual do usuário
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
+
+                    // Adiciona um marcador na localização atual
+                    marker = L.marker([userLat, userLon]).addTo(map);
+                    map.setView([userLat, userLon], 15); // Centraliza o mapa na localização do usuário
+                }, () => {
+                    alert('Não foi possível obter a sua localização.');
+                });
+            } else {
+                alert('Geolocalização não é suportada por este navegador.');
+            }
+        }
+
+        // Função para adicionar um marcador ao clicar no mapa
+        function onMapClick(e) {
+            if (marker) {
+                map.removeLayer(marker); // Remove o marcador se já existir
+                marker = null; // Zera a variável do marcador
+            } else {
+                marker = L.marker(e.latlng).addTo(map); // Adiciona um novo marcador
+            }
+        }
+
+        // Desenha a rota ao carregar a página
+        window.onload = () => {
+            drawSavedRoute();
+            getLocation(); // Obtém a localização atual ao carregar
+            map.on('click', onMapClick); // Adiciona evento de clique no mapa
+        };
+    </script>
+</body>
+</html>
